@@ -1,0 +1,356 @@
+using System;
+using System.Collections.Generic;
+
+// Інтерфейс аксесуарів
+interface IAccessory
+{
+    int GetCost();
+    int GetWeight();
+}
+
+// Базовий клас аксесуарів
+class BaseAccessory : IAccessory
+{
+    protected int cost;
+    protected int weight;
+
+    public BaseAccessory(int cost, int weight)
+    {
+        this.cost = cost;
+        this.weight = weight;
+    }
+
+    public int GetCost()
+    {
+        return cost;
+    }
+
+    public int GetWeight()
+    {
+        return weight;
+    }
+}
+
+// Інтерфейс для зброї
+interface IWeapon
+{
+    int GetCost();
+    int GetWeight();
+}
+
+// Базовий клас зброї
+class BaseWeapon : IWeapon
+{
+    protected int cost;
+    protected int weight;
+
+    public BaseWeapon(int cost, int weight)
+    {
+        this.cost = cost;
+        this.weight = weight;
+    }
+
+    public int GetCost()
+    {
+        return cost;
+    }
+
+    public int GetWeight()
+    {
+        return weight;
+    }
+}
+
+// Декоратор додавання аксесуарів
+class WeaponWithAccessory : WeaponDecorator
+{
+    private IAccessory accessory;
+
+    public WeaponWithAccessory(IWeapon weapon, IAccessory accessory) : base(weapon)
+    {
+        this.accessory = accessory;
+    }
+
+    public override int GetCost()
+    {
+        return base.GetCost() + accessory.GetCost();
+    }
+
+    public override int GetWeight()
+    {
+        return base.GetWeight() + accessory.GetWeight();
+    }
+}
+
+// Декоратор перевірки обмеження ваги 
+class WeightLimitDecorator : WeaponDecorator
+{
+    private int weightLimit;
+
+    public WeightLimitDecorator(IWeapon weapon, int weightLimit) : base(weapon)
+    {
+        this.weightLimit = weightLimit;
+    }
+
+    public override int GetWeight()
+    {
+        int baseWeight = base.GetWeight();
+
+        
+        if (baseWeight > weightLimit)
+        {
+            Console.WriteLine("Перевищена маса зброї!");
+            return weightLimit;
+        }
+
+        return baseWeight;
+    }
+}
+
+// Клас декоратора зброї
+abstract class WeaponDecorator : IWeapon
+{
+    protected IWeapon weapon;
+
+    public WeaponDecorator(IWeapon weapon)
+    {
+        this.weapon = weapon;
+    }
+
+    public virtual int GetCost()
+    {
+        return weapon.GetCost();
+    }
+
+    public virtual int GetWeight()
+    {
+        return weapon.GetWeight();
+    }
+}
+
+class Pistol : BaseWeapon
+{
+    public Pistol(int year) : base(500, 2)
+    {
+        if (year < 2010)
+        {
+            cost -= 100;
+        }
+    }
+}
+
+class Rifle : BaseWeapon
+{
+    public Rifle(int year) : base(1000, 4)
+    {
+        if (year < 2010)
+        {
+            cost -= 200;
+        }
+    }
+}
+
+class MachineGun : BaseWeapon
+{
+    public MachineGun(int year) : base(1500, 8)
+    {
+        if (year < 2010)
+        {
+            cost -= 300;
+        }
+    }
+}
+
+class WeaponStore
+{
+    private List<IWeapon> weapons = new List<IWeapon>();
+
+    public void AddWeapon(IWeapon weapon)
+    {
+        weapons.Add(weapon);
+    }
+
+    public void AddAccessory(int weaponIndex, IAccessory accessory)
+    {
+        if (weaponIndex >= 0 && weaponIndex < weapons.Count)
+        {
+            IWeapon weapon = weapons[weaponIndex];
+            IWeapon weaponWithAccessory = new WeaponWithAccessory(weapon, accessory);
+            weapons[weaponIndex] = weaponWithAccessory;
+        }
+        else
+        {
+            Console.WriteLine("Невірний індекс зброї.");
+        }
+    }
+
+    public int CalculateTotalCost()
+    {
+        int totalCost = 0;
+        foreach (var weapon in weapons)
+        {
+            totalCost += weapon.GetCost();
+        }
+        return totalCost;
+    }
+
+    public IWeapon FindMostExpensiveWeapon()
+    {
+        IWeapon mostExpensive = null;
+        int maxCost = int.MinValue;
+
+        foreach (var weapon in weapons)
+        {
+            if (weapon.GetCost() > maxCost)
+            {
+                maxCost = weapon.GetCost();
+                mostExpensive = weapon;
+            }
+        }
+
+        return mostExpensive;
+    }
+
+    public List<IWeapon> GetWeapons()
+    {
+        return weapons;
+    }
+}
+
+// Клас для фасаду зброї
+class WeaponFacade
+{
+    private WeaponStore weaponStore;
+
+    public WeaponFacade()
+    {
+        weaponStore = new WeaponStore();
+    }
+
+    public void AddWeapon(IWeapon weapon)
+    {
+        weaponStore.AddWeapon(weapon);
+    }
+
+    public void AddAccessory(int weaponIndex, IAccessory accessory)
+    {
+        weaponStore.AddAccessory(weaponIndex, accessory);
+    }
+
+    public int CalculateTotalCost()
+    {
+        return weaponStore.CalculateTotalCost();
+    }
+
+    public IWeapon FindMostExpensiveWeapon()
+    {
+        return weaponStore.FindMostExpensiveWeapon();
+    }
+
+    public List<IWeapon> GetWeapons()
+    {
+        return weaponStore.GetWeapons();
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        WeaponFacade weaponFacade = new WeaponFacade();
+
+        Console.WriteLine("Ласкаво просимо в магазин зброї!");
+
+        while (true)
+        {
+            Console.WriteLine("\nВиберіть опцію:");
+            Console.WriteLine("1. Додати пістолет");
+            Console.WriteLine("2. Додати гвинтівку");
+            Console.WriteLine("3. Додати кулемет");
+            Console.WriteLine("4. Показати арсенал");
+            Console.WriteLine("5. Загальна вартість");
+            Console.WriteLine("6. Знайти найдорожчу зброю");
+            Console.WriteLine("7. Додати аксесуар");
+            Console.WriteLine("8. Вийти");
+
+            int choice = Convert.ToInt32(Console.ReadLine());
+
+            switch (choice)
+            {
+                case 1:
+                    Console.WriteLine("Введіть рік виробництва пістолета:");
+                    int pistolYear = Convert.ToInt32(Console.ReadLine());
+                    weaponFacade.AddWeapon(new Pistol(pistolYear));
+                    break;
+
+                case 2:
+                    Console.WriteLine("Введіть рік виробництва гвинтівки:");
+                    int rifleYear = Convert.ToInt32(Console.ReadLine());
+                    weaponFacade.AddWeapon(new Rifle(rifleYear));
+                    break;
+
+                case 3:
+                    Console.WriteLine("Введіть рік виробництва кулемета:");
+                    int machineGunYear = Convert.ToInt32(Console.ReadLine());
+                    weaponFacade.AddWeapon(new MachineGun(machineGunYear));
+                    break;
+
+                case 4:
+                    Console.WriteLine("\nАрсенал:");
+                    foreach (var weapon in weaponFacade.GetWeapons())
+                    {
+                        Console.WriteLine($"Ціна: {weapon.GetCost()}, Вага: {weapon.GetWeight()}");
+                    }
+                    break;
+
+                case 5:
+                    Console.WriteLine($"\nЗагальна вартість: {weaponFacade.CalculateTotalCost()}");
+                    break;
+
+                case 6:
+                    IWeapon mostExpensiveWeapon = weaponFacade.FindMostExpensiveWeapon();
+                    Console.WriteLine($"Найдорожча зброя: Ціна - {mostExpensiveWeapon.GetCost()}, Вага - {mostExpensiveWeapon.GetWeight()}");
+                    break;
+
+                case 7:
+                    Console.WriteLine("Введіть індекс зброї, до якої додаємо аксесуар:");
+                    int weaponIndex = Convert.ToInt32(Console.ReadLine());
+
+                    Console.WriteLine("Виберіть опцію:");
+                    Console.WriteLine("1. Додати приціл");
+                    Console.WriteLine("2. Додати глушник");
+                    Console.WriteLine("3. Назад");
+
+                    int accessoryChoice = Convert.ToInt32(Console.ReadLine());
+
+                    switch (accessoryChoice)
+                    {
+                        case 1:
+                            weaponFacade.AddAccessory(weaponIndex, new BaseAccessory(100, 1)); // Приціл
+                            break;
+
+                        case 2:
+                            weaponFacade.AddAccessory(weaponIndex, new BaseAccessory(200, 2)); // Глушник
+                            break;
+
+                        case 3:
+                            break;
+
+                        default:
+                            Console.WriteLine("Невірний вибір аксесуару.");
+                            break;
+                    }
+                    break;
+
+                case 8:
+                    Console.WriteLine("Вихід із магазину.");
+                    Environment.Exit(0);
+                    break;
+
+                default:
+                    Console.WriteLine("Помилка. Спробуйте ще раз.");
+                    break;
+            }
+        }
+    }
+}
